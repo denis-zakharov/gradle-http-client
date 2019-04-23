@@ -1,0 +1,47 @@
+group 'com.example.http'
+version '1.0-SNAPSHOT'
+
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'org.apache.httpcomponents:fluent-hc:4.5.8'
+    }
+}
+
+import org.apache.http.client.fluent.Request
+import org.apache.http.HttpHeaders
+import groovy.json.JsonSlurper
+import groovy.json.JsonOutput
+import org.apache.http.entity.ContentType
+
+task httpGet {
+    doLast {
+        def parser = new JsonSlurper()
+        String auth = "Basic " + "${user}:${pwd}".bytes.encodeBase64().toString()
+        String resp = Request.Get("https://api.github.com/")
+            .addHeader(HttpHeaders.AUTHORIZATION, auth)
+            .execute().returnContent().asString()
+        println resp
+        def json = parser.parseText(resp)
+        println json.current_user_url
+    }
+}
+
+task httpPost {
+    doLast {
+        def parser = new JsonSlurper()
+        def jsonMap = [
+            "name": "ApiTest",
+            "body": "Developer documentation project for the developer site."
+        ]
+        String auth = "Basic " + "${user}:${pwd}".bytes.encodeBase64().toString()
+        String resp = Request.Post("https://api.github.com/user/projects")
+                .addHeader(HttpHeaders.AUTHORIZATION, auth)
+                .addHeader(HttpHeaders.ACCEPT, "application/vnd.github.inertia-preview+json") // github
+                .bodyString(JsonOutput.toJson(jsonMap), ContentType.APPLICATION_JSON)
+                .execute().returnContent().asString()
+        println resp
+    }
+}
